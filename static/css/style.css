@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  background: #101010;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+header {
+  padding: 14px;
+  background: #181818;
+  border-bottom: 2px solid #333;
+}
+
+h1 {
+  margin: 0 0 8px 0;
+}
+
+#statsBar {
+  margin: 0;
+  font-weight: bold;
+  color: #d8eaff;
+}
+
+#menu {
+  padding: 12px;
+  background: #202020;
+}
+
+button {
+  padding: 10px 14px;
+  margin: 4px;
+  font-size: 15px;
+  cursor: pointer;
+  border: 1px solid #555;
+  background: #2f2f2f;
+  color: white;
+  border-radius: 6px;
+}
+
+button:hover {
+  background: #444;
+}
+
+canvas {
+  display: block;
+  margin: 16px auto;
+  background: #134629;
+  border: 2px solid #444;
+}
+
+#helpText {
+  font-size: 15px;
+  color: #ddd;
+}
