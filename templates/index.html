@@ -2,10 +2,44 @@
 <html>
 <head>
   <title>Town Space Game</title>
+  <style>
+    body { background: #111; color: white; text-align: center; }
+    canvas { background: #134629; margin-top: 20px; }
+  </style>
 </head>
 <body>
-  <h1>Town Space Game</h1>
-  <p>Render web version is online.</p>
-  <p>The desktop Tkinter game is still in the repo. Next step is converting modules to browser canvas.</p>
+
+<h1>Town Space Game</h1>
+
+<canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let x = 500;
+let y = 300;
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp") y -= 5;
+    if (e.key === "ArrowDown") y += 5;
+    if (e.key === "ArrowLeft") x -= 5;
+    if (e.key === "ArrowRight") x += 5;
+});
+
+function gameLoop() {
+    ctx.fillStyle = "#134629";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // player
+    ctx.fillStyle = "red";
+    ctx.fillRect(x, y, 20, 20);
+
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
 </body>
 </html>
