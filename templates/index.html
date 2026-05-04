@@ -1,334 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Town Space Game - Racetrack</title>
-  <style>
-    body {
-      margin: 0;
-      background: #101010;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-
-    canvas {
-      background: #134629;
-      display: block;
-      margin: 20px auto;
-      border: 2px solid #333;
-    }
-
-    .controls {
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 10px 18px;
-      margin: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+  <title>Town & Space Game</title>
+  <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-<h1>Town Space Game</h1>
-<h2>Racetrack Web Prototype</h2>
-
-<div class="controls">
-  <button onclick="startRace()">Start Race</button>
-  <button onclick="resetRace()">Reset</button>
-</div>
-
-<canvas id="gameCanvas" width="1000" height="640"></canvas>
-
-<p>Controls: W/S change lanes, A/D adjust speed, Space boost</p>
-
-<script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-
-const W = canvas.width;
-const H = canvas.height;
-
-const cx = W / 2;
-const cy = H / 2;
-const outerA = W * 0.44;
-const outerB = H * 0.44;
-
-const LANES = 6;
-const LANE_WIDTH = 22;
-const LAPS_TO_WIN = 10;
-
-let keys = {};
-let started = false;
-let winner = null;
-
-class Car {
-  constructor(color, lane, isAI = false) {
-    this.color = color;
-    this.lane = lane;
-    this.isAI = isAI;
-    this.theta = -Math.PI / 2;
-    this.prevTheta = this.theta;
-    this.speed = isAI ? 1.5 : 1.6;
-    this.boost = 0;
-    this.cooldown = 0;
-    this.laps = 0;
-  }
-
-  effectiveSpeed() {
-    return this.speed + (this.boost > 0 ? 0.85 : 0);
-  }
-}
-
-let player = new Car("#ff5555", 0, false);
-
-let aiCars = [
-  new Car("#88c9ff", 2, true),
-  new Car("#d8bb55", 3, true),
-  new Car("#7ed7a3", 4, true)
-];
-
-aiCars[0].theta -= 0.55;
-aiCars[1].theta -= 1.10;
-aiCars[2].theta -= 1.65;
-
-function ovalRadius(theta, lane) {
-  const inset = (lane + 0.5) * LANE_WIDTH;
-  const a = Math.max(40, outerA - inset);
-  const b = Math.max(40, outerB - inset);
-  const denom = Math.sqrt((b * Math.cos(theta)) ** 2 + (a * Math.sin(theta)) ** 2);
-  return (a * b) / Math.max(0.000001, denom);
-}
-
-function edgeRadius(theta, edge) {
-  const inset = edge * LANE_WIDTH;
-  const a = Math.max(40, outerA - inset);
-  const b = Math.max(40, outerB - inset);
-  const denom = Math.sqrt((b * Math.cos(theta)) ** 2 + (a * Math.sin(theta)) ** 2);
-  return (a * b) / Math.max(0.000001, denom);
-}
-
-function startRace() {
-  started = true;
-  winner = null;
-}
-
-function resetRace() {
-  started = false;
-  winner = null;
-
-  player = new Car("#ff5555", 0, false);
-
-  aiCars = [
-    new Car("#88c9ff", 2, true),
-    new Car("#d8bb55", 3, true),
-    new Car("#7ed7a3", 4, true)
-  ];
-
-  aiCars[0].theta -= 0.55;
-  aiCars[1].theta -= 1.10;
-  aiCars[2].theta -= 1.65;
-}
-
-document.addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true;
-});
-
-document.addEventListener("keyup", e => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-function wrapAngle(a) {
-  while (a < -Math.PI) a += Math.PI * 2;
-  while (a >= Math.PI) a -= Math.PI * 2;
-  return a;
-}
-
-function updateCar(car, dt) {
-  car.prevTheta = car.theta;
-  car.theta += car.effectiveSpeed() * dt;
-
-  const prev = wrapAngle(car.prevTheta);
-  const cur = wrapAngle(car.theta);
-
-  const crossed = prev < 0 && cur >= 0;
-
-  if (crossed) {
-    car.laps++;
-
-    if (car.laps >= LAPS_TO_WIN && winner === null) {
-      winner = car === player ? "You win!" : "AI wins!";
-      started = false;
-    }
-  }
-}
-
-function update(dt) {
-  if (!started || winner) return;
-
-  if (keys["a"] || keys["arrowleft"]) {
-    player.speed += 0.9 * dt;
-  }
-
-  if (keys["d"] || keys["arrowright"]) {
-    player.speed -= 0.9 * dt;
-  }
-
-  if ((keys["w"] || keys["arrowup"]) && player.lane > 0) {
-    player.lane--;
-    keys["w"] = false;
-    keys["arrowup"] = false;
-  }
-
-  if ((keys["s"] || keys["arrowdown"]) && player.lane < LANES - 1) {
-    player.lane++;
-    keys["s"] = false;
-    keys["arrowdown"] = false;
-  }
-
-  if (keys[" "] && player.cooldown <= 0) {
-    player.boost = 0.7;
-    player.cooldown = 1.1;
-  }
-
-  player.speed = Math.max(0.9, Math.min(2.2, player.speed));
-
-  player.boost = Math.max(0, player.boost - dt);
-  player.cooldown = Math.max(0, player.cooldown - dt);
-
-  updateCar(player, dt);
-
-  aiCars.forEach((car, i) => {
-    car.boost = Math.max(0, car.boost - dt);
-    car.cooldown = Math.max(0, car.cooldown - dt);
-
-    const targetSpeed = 1.48 + i * 0.05;
-    car.speed += (targetSpeed - car.speed) * 0.02;
-
-    if (Math.random() < 0.01 && car.lane < LANES - 1) car.lane++;
-    if (Math.random() < 0.01 && car.lane > 0) car.lane--;
-
-    updateCar(car, dt);
-  });
-}
-
-function drawTrack() {
-  ctx.fillStyle = "#134629";
-  ctx.fillRect(0, 0, W, H);
-
-  const steps = 240;
-
-  ctx.fillStyle = "#505050";
-  ctx.beginPath();
-
-  for (let i = 0; i <= steps; i++) {
-    const t = -Math.PI + (Math.PI * 2 * i) / steps;
-    const r = edgeRadius(t, 0);
-    ctx.lineTo(cx + r * Math.cos(t), cy + r * Math.sin(t));
-  }
-
-  for (let i = steps; i >= 0; i--) {
-    const t = -Math.PI + (Math.PI * 2 * i) / steps;
-    const r = edgeRadius(t, LANES);
-    ctx.lineTo(cx + r * Math.cos(t), cy + r * Math.sin(t));
-  }
-
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.strokeStyle = "#e6e6e6";
-  ctx.lineWidth = 2;
-
-  for (let edge = 0; edge <= LANES; edge++) {
-    ctx.beginPath();
-
-    for (let i = 0; i <= steps; i++) {
-      const t = -Math.PI + (Math.PI * 2 * i) / steps;
-      const r = edgeRadius(t, edge);
-      const x = cx + r * Math.cos(t);
-      const y = cy + r * Math.sin(t);
-
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = "white";
-  ctx.lineWidth = 7;
-
-  const t0 = 0;
-  const ro = edgeRadius(t0, 0);
-  const ri = edgeRadius(t0, LANES);
-
-  ctx.beginPath();
-  ctx.moveTo(cx + ro * Math.cos(t0), cy + ro * Math.sin(t0));
-  ctx.lineTo(cx + ri * Math.cos(t0), cy + ri * Math.sin(t0));
-  ctx.stroke();
-}
-
-function drawCar(car) {
-  const r = ovalRadius(car.theta, car.lane);
-  const x = cx + r * Math.cos(car.theta);
-  const y = cy + r * Math.sin(car.theta);
-
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(car.theta + Math.PI / 2);
-
-  ctx.fillStyle = car.color;
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 2;
-
-  ctx.beginPath();
-  ctx.rect(-7, -13, 14, 26);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function drawHUD() {
-  ctx.fillStyle = "white";
-  ctx.font = "bold 16px Arial";
-
-  ctx.fillText(`Laps: ${player.laps}/${LAPS_TO_WIN}`, 20, 30);
-  ctx.fillText(`Speed: ${player.speed.toFixed(2)}`, 20, 55);
-  ctx.fillText(`Lane: ${player.lane + 1}`, 20, 80);
-  ctx.fillText(`Boost: ${player.boost > 0 ? "ON" : "OFF"}`, 20, 105);
-
-  if (!started && !winner) {
-    ctx.font = "bold 30px Arial";
-    ctx.fillText("Click Start Race", W / 2 - 110, 70);
-  }
-
-  if (winner) {
-    ctx.font = "bold 38px Arial";
-    ctx.fillText(winner, W / 2 - 80, 70);
-  }
-}
-
-let lastTime = performance.now();
-
-function loop(now) {
-  const dt = Math.min(0.05, (now - lastTime) / 1000);
-  lastTime = now;
-
-  update(dt);
-
-  drawTrack();
-  drawCar(player);
-  aiCars.forEach(drawCar);
-  drawHUD();
-
-  requestAnimationFrame(loop);
-}
-
-loop(performance.now());
-</script>
+<header>
+  <h1>Town & Space Game</h1>
+  <p id="statsBar"></p>
+</header>
+
+<nav id="menu">
+  <button onclick="Game.switchMode('town')">Classic Town</button>
+  <button onclick="Game.switchMode('space')">Space</button>
+  <button onclick="Game.switchMode('zombies')">Zombies</button>
+  <button onclick="Game.switchMode('golf')">Golf</button>
+  <button onclick="Game.switchMode('soccer')">Soccer</button>
+  <button onclick="Game.switchMode('racetrack')">Racetrack</button>
+  <button onclick="Game.save()">Save</button>
+  <button onclick="Game.load()">Load</button>
+</nav>
+
+<main>
+  <canvas id="gameCanvas" width="1000" height="640"></canvas>
+</main>
+
+<p id="helpText"></p>
+
+<script src="/static/js/state.js"></script>
+<script src="/static/js/placeholder_modes.js"></script>
+<script src="/static/js/racetrack.js"></script>
+<script src="/static/js/main.js"></script>
 
 </body>
 </html>
